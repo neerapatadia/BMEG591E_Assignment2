@@ -166,6 +166,8 @@ are much smaller in size and faster to access.
 
 ``` bash
 #?# Using *samtools view*, convert the sam file containing the result of the alignment of the iPSC input files to the reference genome (last step output) to bam format - 1.5 pt
+
+samtools view -S -b -h hg38_alignment_bowtie2.sam > hg38_alignment_bowtie2.bam
 ## Don't forget to include the header! (-h flag)
 ```
 
@@ -186,14 +188,38 @@ install it via anaconda.
 ## Run the following command, changing the step_d_output.bam for the name of the bam output file you got from step c; this will print the read ID, chromosome, and genomic position for each read alignment; replace <step_c_output>.bam with the name of your bam file from the last step.
 samtools view <step_c_output>.bam | cut -f1,3,4 | head -5
 #?# Use the documentation format (# at the beginning of the line) to include the output of the command above (one per line): - 0.5pt
+
+#SRR12694366.1000000    chr3    46631700
+#SRR12694366.1000000    chr3    46631857
+#SRR12694366.10000029   chr3    77719001
+#SRR12694366.10000029   chr3    77718984
+#SRR12694366.10000035   chr3    40015576
+
 ## Using *sambamba sort*, sort the bam file that you created on the last step
 ## sambamba sort default will sort the file and build an index that will allow us to look at the reads that mapped to a specific positions in the genome
 #?# Type the command you use below: - 1 pt
+
+sambamba sort hg38_alignment_bowtie2.bam
+
 ## View the read ID, chromosome, and genomic position for the first 5 reads, as before, but this time for the sorted bam file you just made.
 samtools view step_d_output.bam | cut -f1,3,4 | head -5
 #?# Use the documentation format (# at the beginning of the line) to include the output of the command above (one per line): 0.5 pt
+
+#SRR12694366.7794671    chr12   133198776
+#SRR12694366.7794671    chr12   133198776
+#SRR12694366.26500791   chr3    9988
+#SRR12694366.33624963   chr3    10013
+#SRR12694366.33624963   chr3    10013
+
+
 #?# What changed between the two files? Describe what is sambamba sort doing. - 1 pt
 ## If needed, you can inspect more of each bam file by increasing the -n parameter for `head` in the above (just don't bother to include more than 5 lines for each in your submission).
+
+"""
+The order of the rows in the file changed. Before the file was just organized by
+the read name. With sambamba sort, the file is sorted by the order of the genomic
+position of each read alignment.
+"""
 ```
 
 ### e. Keep only uniquely mapped reads
@@ -211,7 +237,19 @@ these ambiguously mapping reads.
 ## For this we will make use of the *-F* flag to filter the reads that were mapped and are not duplicates, by adding the following flag:
 ## *  -F "[XS] == null and not unmapped and not duplicate"  *
 ## Important: Remember to add the header (-h flag) and to specify the output file format (-f flag) as bam
+
+sambamba view -h -F "[XS] == null and not unmapped and not duplicate" hg38_alignment_bowtie2.sorted.bam -o hg38_alignment_bowtie2_sorted_filtered.bam
+
+
 #?# How many reads were there before filtering for uniquely mapped reads? How many are there now? Include the code to answer these questions and the answers to them below.
+
+samtools view -c hg38_alignment_bowtie2.sorted.bam
+#alternate version of the above command: samtools view hg38_alignment_bowtie2.sorted.bam | wc -l
+#There are 4444490 reads in the file prior to filtering
+
+samtools view -c hg38_alignment_bowtie2_sorted_filtered.bam
+#alternate version of the above command: samtools view hg38_alignment_bowtie2_sorted_filtered.bam | wc -l
+#There are 3859882 reads in the file afer filtering for uniquely mapped reads.
 ```
 
 Now that you have created your BAM files and inspected them, now would
