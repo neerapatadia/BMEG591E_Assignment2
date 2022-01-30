@@ -99,6 +99,8 @@ install things using conda (see your assignment 1)\!
 ``` bash
 #?# Add sambamba to your conda environment created on assignment 1 - 1pt
 ## Note: to complete this assignment, it is expected that your conda environment already has installed: fastqc, bowtie2 and samtools 
+
+conda install -c bioconda sambamba
 ```
 
 ## 1\. Analyzing ChIP-seq data (steps a-e)
@@ -118,11 +120,26 @@ quality check of the two files included in your set (\_1 and \_2).
 ``` bash
 ## NOTE: Remember to use screen activate your conda environment!
 #?# Type below the command that you used to perform the fastqc analysis on the paired-end iPSC input files: - 0.5 pt
+#I decided to place the outputs to the assignment 1 directory to keep the files together.
+
+cd /projects/bmeg/A2/
+fastqc input_iPSC_SRA66_subset_1.fastq.gz -o /home/npatadia_bmeg22/assignment2_bmeg591e/
+fastqc input_iPSC_SRA66_subset_2.fastq.gz -o /home/npatadia_bmeg22/assignment2_bmeg591e/
+
 ## Copy the html output file to your computer, open it and write below what can you tell about the data quality of these files.
 ## You can reference fastqc documentation if in doubt.
 #?# Are there any differences between the files for read 1 and read 2? Describe what you see below: - 1.5 pt
-## -
-## -
+"""
+For both reads, the per read sequene quality appears to be very high, as all the
+positions in the sequence fall in the green, high quality region of the figure.
+Additionally, both reads have a drop off in quality at the end of the sequence. 
+This is not unexpected as at all the clusters formed by illumina reads 
+do not grow at the same rate, therefore the terminal ends of the read will be 
+more error prone. Furthermore, read 2 appears to be more error prone in comparison
+to read 1 due to the fact that the error bars extend further towards the low 
+quality region as opposed to read 1.
+"""
+
 ## NOTE: Same as last time, in order to open the html files on your web browser you will need to download the files to your computer
 ## Ubuntu/Linux and Mac users: look at the *scp* command
 ## Windows users: you can follow these instructions: https://stackoverflow.com/questions/6217055/how-can-i-copy-a-file-from-a-remote-server-to-using-putty-in-windows
@@ -135,6 +152,9 @@ mindful of the resources in the server (use htop)
 
 ``` bash
 #?# Perform a paired-end alignment of the iPSC input fastq sequences to the human genome using bowtie2 - 1.5 pt
+
+bowtie2 -x /projects/bmeg/indexes/hg38/hg38_bowtie2_index -1 /projects/bmeg/A2/input_iPSC_SRA66_subset_1.fastq.gz -2 /projects/bmeg/A2/input_iPSC_SRA66_subset_2.fastq.gz -S /home/npatadia_bmeg22/assignment2_bmeg591e/hg38_alignment_bowtie2.sam
+
 ## Use the previously created index located in: /projects/bmeg/indexes/hg38/hg38_bowtie2_index 
 ## Tip: look at the bowtie2 --help or the documentation on the tool website (http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#getting-started-with-bowtie-2-lambda-phage-example)
 ```
