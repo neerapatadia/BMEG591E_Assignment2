@@ -84,7 +84,6 @@ Similarly to the last assignment, we need to make sure that the data has a good 
 ```{bash, eval=FALSE}
 ## NOTE: Remember to use screen activate your conda environment!
 #?# Type below the command that you used to perform the fastqc analysis on the paired-end iPSC input files: - 0.5 pt
-#I decided to place the outputs to the assignment 1 directory to keep the files together.
 
 cd /projects/bmeg/A2/
 fastqc input_iPSC_SRA66_subset_1.fastq.gz -o /home/npatadia_bmeg22/assignment2_bmeg591e/
@@ -236,6 +235,10 @@ Now run the following command, where you should replace <taskfile> with the name
 ```{bash, eval=FALSE}
 ./runTheseJobsSerially.sh echo <taskfile>
 #?# what happened? Enter your answer below - 1 pt
+sampleID fastqFile1 fastqFile2
+iPSC_input input_iPSC_SRA66_subset_1.fastq.gz input_iPSC_SRA66_subset_2.fastq.gz
+H3K27me3_input H3K27me3_iPSC_SRA60_subset_1.fastq.gz H3K27me3_iPSC_SRA60_subset_2.fastq.gz
+#it printed all the lines in the file
 ## --
 ```
 
@@ -299,6 +302,36 @@ When you are done, enter the code for your pipeline in the space provided below 
 
 ```{bash, eval=FALSE}
 #?# REPLACE THIS WITH YOUR SCRIPT
+
+#!/bin/bash
+set -e # this makes the whole script exit on any error.
+#fill these variables with the arguments given to this script
+sample=$1
+fq1=$2
+fq2=$3
+logDir=/home/npatadia_bmeg22/assignment2_bmeg591e/pipeline_out/ # this is where all the files to keep track of progress will go.
+mkdir -p $logDir # make the directory where log files will go, if it doesn't exist already
+echo running pipeline for $sample
+if [ ! -e $logDir/$sample.fastqc.done ] #run this code only if $logDir/$sample.fastqc.done is missing
+then
+        echo Performing fastqc of sample $sample with the following fastqs:
+        ls /projects/bmeg/A2/$fq1 /projects/bmeg/A2/$fq2
+
+	#enter commands to run fastqc here
+	fastqc /projects/bmeg/A2/$fq1 -o $logDir
+	fastqc /projects/bmeg/A2/$fq2 -o $logDir
+        
+        touch $logDir/$sample.fastqc.done #create the file that we were looking for at the beginning of this if statement so that this same code is not run next time
+else # $logDir/$sample.fastqc.done was not missing
+        echo Already performed fastqc of $sample
+fi
+#here is where you will be including the additional steps to take you from fastq.gz to sorted BAM containing only uniquely mapping reads.
+	bowtie2 -x /projects/bmeg/indexes/hg38/hg38_bowtie2_index -1 /projects/bmeg/A2/$fq1 -2 /projects/bmeg/A2/$fq2 -S $logDir/hg38_alignment_$sample.sam
+	samtools view -S -b -h $logDir/hg38_alignment_$sample.sam > $logDir/hg38_alignment_$sample.bam
+	sambamba sort $logDir/hg38_alignment_$sample.bam -o $logDir/hg38_alignment_$sample.sorted.bam
+	sambamba view -h -F "[XS] == null and not unmapped and not duplicate" $logDir/hg38_alignment_$sample.sorted.bam -o $logDir/hg38_alignment_$sample.filtered.bam
+
+
 ```
 
 
