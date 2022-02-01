@@ -348,24 +348,47 @@ else # $logDir/$sample.fastqc.done was not missing
 fi
 #here is where you will be including the additional steps to take you from fastq.gz to sorted BAM containing only uniquely mapping reads.
 
-if [ ! -e $logDir/$sample.sam.bam.analysis.done ]  #implement check so that alignment and analysis is not rerun once completed.
+
+#running alignment
+if [ ! -e $logDir/$sample.alignment.done ]  #check if alignment has been completed
 then
         echo running alignment for $sample
       	bowtie2 -x /projects/bmeg/indexes/hg38/hg38_bowtie2_index -1 /projects/bmeg/A2/$fq1 -2 /projects/bmeg/A2/$fq2 -S       $logDir/hg38_alignment_$sample.sam
-      	
+      	touch $logDir/$sample.alignment.done
+else 
+       echo Already performed alignment of $sample
+fi
+
+#convert sam to bam file
+if [ ! -e $logDir/$sample.sam.to.bam.done ] #check if conversion has been performed
+then
 	      echo convert sam to bam for $sample
 	      samtools view -S -b -h $logDir/hg38_alignment_$sample.sam > $logDir/hg38_alignment_$sample.bam
-	      
+	      touch $logDir/$sample.sam.to.bam.done
+else
+       echo Already performed sam to bam conversion of $sample
+fi
+
+#sort the file
+if [ ! -e $logDir/$sample.sort.alignment.done ]  #check if sort completed
+then	      
 	      echo run sort for $sample
 	      sambamba sort $logDir/hg38_alignment_$sample.bam -o $logDir/hg38_alignment_$sample.sorted.bam
+	      touch $logDir/$sample.sort.alignment.done
+else
+        echo Already ran sort on $sample
+fi
+        
+#get the uniquely mapping reads
+if [ ! -e $logDir/$sample.uniquely.mapping.alignment.done ] #check if you have the uniquely mapping reads
+then
 	
-	      echo get only uniquely mapping reads
+	     echo get only uniquely mapping reads
 	     sambamba view -h -F "[XS] == null and not unmapped and not duplicate" $logDir/hg38_alignment_$sample.sorted.bam -o $logDir/hg38_alignment_$sample.filtered.bam
-	     
-	     touch $logDir/$sample.sam.bam.analysis.done
+	     touch $logDir/$sample.uniquely.mapping.alignment.done
 
 else 
-       echo Already performed alignment and sorting analysis of $sample
+       echo Already got uniquely mapping reads of $sample
 fi
 
 ```
