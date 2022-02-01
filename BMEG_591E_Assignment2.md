@@ -1,7 +1,7 @@
 BMEG\_591E\_Assignment2
 ================
 Neera Patadia
-29/01/2022
+31/01/2022
 
 # Assignment Overview
 
@@ -328,6 +328,8 @@ if [ ! -e $logDir/$sample.fastqc.done ] #run this code only if $logDir/$sample.f
 then
         echo Performing fastqc of sample $sample with the following fastqs:
         ls /projects/bmeg/A2/$fq1 /projects/bmeg/A2/$fq2
+        fastqc /projects/bmeg/A2/$fq1 -o $logDir
+          fastqc /projects/bmeg/A2/$fq2 -o $logDir
         
         #enter commands to run fastqc here
         
@@ -344,11 +346,18 @@ Now run the following:
 ## Run this with <taskfile> replaced with the name of your task file.
 ./runTheseJobsSerially.sh ./fastqToFilteredBam.sh <taskfile>
 #?# What happened? Enter your answer below - 1 pt
-## --
+## The script ran the fastqc on both the IPSC data and the H3K27me3 data
 #?# Now run that same command again. What happened this time? Why? Answer below.  - 2 pts
-## --
+##
+"""
+This time the script did not execute the fastqc line in the script. This is 
+because on the initial run, the script creates the $sample.fastqc.done file.
+When this file has been made, it goes into the else statement, which does
+not re-run the fastqc analysis on the file.
+"""
 #?# What can you do to make it run the same way as it did the first time? Answer below with the command(s) that would make it run the same way as the first time - 2 pts
 ## --
+rm $sample.fastqc.done
 ```
 
 ### d. Filling in the pipeline
@@ -396,19 +405,23 @@ then
         echo Performing fastqc of sample $sample with the following fastqs:
         ls /projects/bmeg/A2/$fq1 /projects/bmeg/A2/$fq2
 
-    #enter commands to run fastqc here
-    fastqc /projects/bmeg/A2/$fq1 -o $logDir
-    fastqc /projects/bmeg/A2/$fq2 -o $logDir
+          #enter commands to run fastqc here
+          fastqc /projects/bmeg/A2/$fq1 -o $logDir
+          fastqc /projects/bmeg/A2/$fq2 -o $logDir
         
         touch $logDir/$sample.fastqc.done #create the file that we were looking for at the beginning of this if statement so that this same code is not run next time
 else # $logDir/$sample.fastqc.done was not missing
         echo Already performed fastqc of $sample
 fi
 #here is where you will be including the additional steps to take you from fastq.gz to sorted BAM containing only uniquely mapping reads.
+if [! -e $logDir/$sample.sam.bam.analysis.done]
     bowtie2 -x /projects/bmeg/indexes/hg38/hg38_bowtie2_index -1 /projects/bmeg/A2/$fq1 -2 /projects/bmeg/A2/$fq2 -S $logDir/hg38_alignment_$sample.sam
     samtools view -S -b -h $logDir/hg38_alignment_$sample.sam > $logDir/hg38_alignment_$sample.bam
     sambamba sort $logDir/hg38_alignment_$sample.bam -o $logDir/hg38_alignment_$sample.sorted.bam
     sambamba view -h -F "[XS] == null and not unmapped and not duplicate" $logDir/hg38_alignment_$sample.sorted.bam -o $logDir/hg38_alignment_$sample.filtered.bam
+
+else 
+       echo Already performed alignment and sorting analysis of $sample
 ```
 
 # Authors and contributions
