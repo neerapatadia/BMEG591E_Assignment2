@@ -1,6 +1,6 @@
 BMEG\_591E\_Assignment2
 ================
-Neera Patadia
+Neera Patadia (79557773)
 31/01/2022
 
 # Assignment Overview
@@ -299,7 +299,6 @@ runTheseJobsSerially.sh` to give the script file execute permissions.
 ``` bash
 ./runTheseJobsSerially.sh echo <taskfile>
 #?# what happened? Enter your answer below - 1 pt
-sampleID fastqFile1 fastqFile2
 iPSC_input input_iPSC_SRA66_subset_1.fastq.gz input_iPSC_SRA66_subset_2.fastq.gz
 H3K27me3_input H3K27me3_iPSC_SRA60_subset_1.fastq.gz H3K27me3_iPSC_SRA60_subset_2.fastq.gz
 #it printed all the lines in the file
@@ -321,17 +320,17 @@ set -e # this makes the whole script exit on any error.
 sample=$1
 fq1=$2
 fq2=$3
-logDir=MyLogDirectory # this is where all the files to keep track of progress will go.
-mkdir -p MyLogDirectory # make the directory where log files will go, if it doesn't exist already
+logDir= /home/npatadia_bmeg22/assignment2_bmeg591e/pipeline_out/ # this is where all the files to keep track of progress will go.
+mkdir -p $logDir # make the directory where log files will go, if it doesn't exist already
 echo running pipeline for $sample
 if [ ! -e $logDir/$sample.fastqc.done ] #run this code only if $logDir/$sample.fastqc.done is missing
 then
         echo Performing fastqc of sample $sample with the following fastqs:
         ls /projects/bmeg/A2/$fq1 /projects/bmeg/A2/$fq2
-        fastqc /projects/bmeg/A2/$fq1 -o $logDir
-          fastqc /projects/bmeg/A2/$fq2 -o $logDir
         
         #enter commands to run fastqc here
+        fastqc /projects/bmeg/A2/$fq1 -o $logDir
+          fastqc /projects/bmeg/A2/$fq2 -o $logDir
         
         touch $logDir/$sample.fastqc.done #create the file that we were looking for at the beginning of this if statement so that this same code is not run next time
 else # $logDir/$sample.fastqc.done was not missing
@@ -346,18 +345,28 @@ Now run the following:
 ## Run this with <taskfile> replaced with the name of your task file.
 ./runTheseJobsSerially.sh ./fastqToFilteredBam.sh <taskfile>
 #?# What happened? Enter your answer below - 1 pt
-## The script ran the fastqc on both the IPSC data and the H3K27me3 data
+running pipeline for iPSC_input
+Already performed fastqc of iPSC_input
+running pipeline for H3K27me3_input
+Already performed fastqc of H3K27me3_input
+"""
+The script ran the fastqc on both the IPSC data and the H3K27me3 data
+"""
 #?# Now run that same command again. What happened this time? Why? Answer below.  - 2 pts
 ##
 """
 This time the script did not execute the fastqc line in the script. This is 
 because on the initial run, the script creates the $sample.fastqc.done file.
-When this file has been made, it goes into the else statement, which does
-not re-run the fastqc analysis on the file.
+When this file has been made, and you re-run the script, the if statement is no
+longer true, because the $sample.fastq.done file has been created, so the script
+goes into the else statement, which does not re-run the fastqc analysis on the 
+file, and instead echos the statement that the fastqc analysis has already 
+been performed on the file.
 """
 #?# What can you do to make it run the same way as it did the first time? Answer below with the command(s) that would make it run the same way as the first time - 2 pts
 ## --
-rm $sample.fastqc.done
+cd /home/npatadia_bmeg22/assignment2_bmeg591e/pipeline_out/ # go to directory with the .done files
+rm *.fastqc.done #remove .done files for all samples.
 ```
 
 ### d. Filling in the pipeline
@@ -397,7 +406,7 @@ set -e # this makes the whole script exit on any error.
 sample=$1
 fq1=$2
 fq2=$3
-logDir=/home/npatadia_bmeg22/assignment2_bmeg591e/pipeline_out/ # this is where all the files to keep track of progress will go.
+logDir=/home/npatadia_bmeg22/assignment2_bmeg591e/pipeline_out # this is where all the files to keep track of progress will go.
 mkdir -p $logDir # make the directory where log files will go, if it doesn't exist already
 echo running pipeline for $sample
 if [ ! -e $logDir/$sample.fastqc.done ] #run this code only if $logDir/$sample.fastqc.done is missing
@@ -405,23 +414,31 @@ then
         echo Performing fastqc of sample $sample with the following fastqs:
         ls /projects/bmeg/A2/$fq1 /projects/bmeg/A2/$fq2
 
-          #enter commands to run fastqc here
-          fastqc /projects/bmeg/A2/$fq1 -o $logDir
-          fastqc /projects/bmeg/A2/$fq2 -o $logDir
+    #enter commands to run fastqc here
+          mkdir -p $logDir/out
+          fastqc /projects/bmeg/A2/$fq1 -o $logDir/out
+          fastqc /projects/bmeg/A2/$fq2 -o $logDir/out
         
         touch $logDir/$sample.fastqc.done #create the file that we were looking for at the beginning of this if statement so that this same code is not run next time
 else # $logDir/$sample.fastqc.done was not missing
         echo Already performed fastqc of $sample
 fi
 #here is where you will be including the additional steps to take you from fastq.gz to sorted BAM containing only uniquely mapping reads.
-if [! -e $logDir/$sample.sam.bam.analysis.done]
-    bowtie2 -x /projects/bmeg/indexes/hg38/hg38_bowtie2_index -1 /projects/bmeg/A2/$fq1 -2 /projects/bmeg/A2/$fq2 -S $logDir/hg38_alignment_$sample.sam
-    samtools view -S -b -h $logDir/hg38_alignment_$sample.sam > $logDir/hg38_alignment_$sample.bam
-    sambamba sort $logDir/hg38_alignment_$sample.bam -o $logDir/hg38_alignment_$sample.sorted.bam
-    sambamba view -h -F "[XS] == null and not unmapped and not duplicate" $logDir/hg38_alignment_$sample.sorted.bam -o $logDir/hg38_alignment_$sample.filtered.bam
+if [ ! -e $logDir/$sample.sam.bam.analysis.done ] 
+then
+        echo running alignment for $sample
+        bowtie2 -x /projects/bmeg/indexes/hg38/hg38_bowtie2_index -1 /projects/bmeg/A2/$fq1 -2 /projects/bmeg/A2/$fq2 -S       $logDir/hg38_alignment_$sample.sam
+        
+          echo running sort for $sample
+          samtools view -S -b -h $logDir/hg38_alignment_$sample.sam > $logDir/hg38_alignment_$sample.bam
+          sambamba sort $logDir/hg38_alignment_$sample.bam -o $logDir/hg38_alignment_$sample.sorted.bam
+    
+          echo get only uniquely mapping reads
+         sambamba view -h -F "[XS] == null and not unmapped and not duplicate" $logDir/hg38_alignment_$sample.sorted.bam -o $logDir/hg38_alignment_$sample.filtered.bam
 
-else 
+else
        echo Already performed alignment and sorting analysis of $sample
+fi
 ```
 
 # Authors and contributions
@@ -431,8 +448,4 @@ with the authors and their contributions to the assignment. If you
 worked alone, only the author (e.g. your name and student ID) should be
 included.
 
-Authors: Name1 (studentID1) and Name2 (studentID2)
-
-Contributions: (example) N1 and N2 worked together on the same computer
-to complete the assignment. N1 typed for the first half and N2 typed for
-the second half.
+Authors: Neera Patadia (79557773)
